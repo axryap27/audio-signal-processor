@@ -40,7 +40,7 @@ class GenreClassifier:
 
     def load_data(self):
         """Load features from CSV"""
-        print("\n📂 Loading features from CSV...")
+        print("\n Loading features from CSV...")
 
         if not os.path.exists(self.features_csv):
             print(f" Features file not found: {self.features_csv}")
@@ -62,7 +62,7 @@ class GenreClassifier:
 
     def preprocess_data(self, X, y):
         """Normalize features and encode labels"""
-        print("\n⚙️  Preprocessing data...")
+        print("\n  Preprocessing data...")
 
         # Normalize features (mean=0, std=1)
         self.scaler = StandardScaler()
@@ -143,7 +143,7 @@ class GenreClassifier:
 
     def train_model(self, X_train, y_train, X_val, y_val, epochs=100, batch_size=32):
         """Train the model"""
-        print(f"\n🚀 Training model ({epochs} epochs, batch_size={batch_size})...")
+        print(f"\n Training model ({epochs} epochs, batch_size={batch_size})...")
 
         # Callbacks
         early_stop = keras.callbacks.EarlyStopping(
@@ -238,11 +238,11 @@ class GenreClassifier:
     def save_model(self, h5_path=MODEL_OUTPUT):
         """Save Keras model"""
         self.model.save(h5_path)
-        print(f"\n💾 Model saved: {h5_path}")
+        print(f"\n Model saved: {h5_path}")
 
     def convert_to_tflite(self, tflite_path=TFLITE_OUTPUT, quantize=True):
         """Convert Keras model to TensorFlow Lite"""
-        print(f"\n🔄 Converting to TensorFlow Lite...")
+        print(f"\n Converting to TensorFlow Lite...")
 
         converter = tf.lite.TFLiteConverter.from_keras_model(self.model)
 
@@ -257,7 +257,7 @@ class GenreClassifier:
             f.write(tflite_model)
 
         file_size = os.path.getsize(tflite_path) / 1024  # KB
-        print(f"✅ TFLite model saved: {tflite_path}")
+        print(f" TFLite model saved: {tflite_path}")
         print(f"   Model size: {file_size:.1f} KB")
 
     def save_metadata(self, metadata_path="./model_metadata.json"):
