@@ -54,7 +54,6 @@ This will:
 - Process all 1000 GTZAN audio files
 - Extract 58 features per song
 - Save to `gtzan_features.csv`
-- Takes ~30-60 minutes
 
 ### 4. Train Model
 ```bash
