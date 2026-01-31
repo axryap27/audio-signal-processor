@@ -96,11 +96,9 @@ JSON Output (serial @ 115200 baud)
    - Classifies audio into 10 music genres
      
 4. **Training Results and Initial Data**
-   - Correlation matrix:
+   - Correlation Matrix & Training History:
    <img width="750" height="600" alt="image" src="https://github.com/user-attachments/assets/ef1503b2-3940-4337-aa76-f16736c97428" />
-   - Training history:
-   <img width="1050" height="375" alt="image" src="https://github.com/user-attachments/assets/aded7aa8-3372-4c81-901d-357fef3bc644" />
-   
+   <img width="750" height="260" alt="image" src="https://github.com/user-attachments/assets/aded7aa8-3372-4c81-901d-357fef3bc644" />
 
 
 ## Documentation
