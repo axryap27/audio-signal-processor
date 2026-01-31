@@ -329,3 +329,46 @@ void DSPFeatureExtractor::compute_mel_spectrum(
         mel_bands[band] = sum;
     }
 }
+
+// ── MFCCs ───────────────────────────────────────────────────────────
+
+/*
+ * Compute Mel-Frequency Cepstral Coefficients:
+ *   1. Run compute_mel_spectrum to get mel-scaled energy bands
+ *   2. Take the log of each band (with a floor to avoid log(0))
+ *   3. Apply a Type-II DCT to compress into cepstral coefficients
+ *
+ * The first ~13 coefficients capture the overall shape of the
+ * spectrum, which is what most audio classifiers care about.
+ */
+void DSPFeatureExtractor::compute_mfcc(
+    const dsp_real_t* spectrum,
+    uint16_t spectrum_len,
+    dsp_real_t freq_res,
+    dsp_real_t* mfcc_out,
+    uint8_t num_coefficients,
+    uint8_t num_mel_bands)
+{
+    if (num_coefficients == 0 || num_mel_bands == 0) return;
+
+    // Step 1: compute mel spectrum into a stack buffer
+    constexpr uint8_t MAX_MEL_BANDS = 40;
+    uint8_t bands = (num_mel_bands > MAX_MEL_BANDS) ? MAX_MEL_BANDS : num_mel_bands;
+    dsp_real_t mel_bands[MAX_MEL_BANDS];
+
+    compute_mel_spectrum(spectrum, spectrum_len, freq_res, mel_bands, bands);
+
+    // Step 2: take the log of each mel band
+    for (uint8_t i = 0; i < bands; i++) {
+        mel_bands[i] = log(fmax(mel_bands[i], 1e-10));
+    }
+
+    // Step 3: DCT-II to get cepstral coefficients
+    for (uint8_t k = 0; k < num_coefficients; k++) {
+        dsp_real_t sum = 0.0;
+        for (uint8_t n = 0; n < bands; n++) {
+            sum += mel_bands[n] * cos(M_PI * k * (2.0 * n + 1.0) / (2.0 * bands));
+        }
+        mfcc_out[k] = sum;
+    }
+}
