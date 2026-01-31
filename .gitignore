@@ -1,0 +1,21 @@
+# Dataset and large files
+ml/GTZAN.zip
+ml/gtzan/
+ml/genres/
+ml/images_original/
+
+# Extracted features and model outputs
+ml/genre_model.h
+
+# PlatformIO
+.pio/
+.vscode/
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+
+# OS
+.DS_Store
+src/genre_model.h
