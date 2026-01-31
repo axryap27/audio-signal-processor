@@ -4,6 +4,16 @@
 #include "dsp_features.h"
 #include <ArduinoJson.h>
 
+// TensorFlow Lite Micro
+#include <TensorFlowLite_ESP32.h>
+#include "tensorflow/lite/micro/all_ops_resolver.h"
+#include "tensorflow/lite/micro/micro_interpreter.h"
+#include "tensorflow/lite/schema/schema_generated.h"
+
+// Model and normalization parameters
+#include "genre_model.h"
+#include "model_config.h"
+
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
@@ -79,6 +89,24 @@ GoertzelState note_detectors[num_note_detectors];
 // Feature containers
 SpectralFeatures spectral_features;
 TemporalFeatures temporal_features;
+
+// MFCC computation
+const uint8_t num_mfcc_coefficients = 13;
+const uint8_t num_mel_bands = 26;
+dsp_real_t mfcc_values[13];
+
+// TFLite inference
+const int TENSOR_ARENA_SIZE = 32 * 1024;  // 32 KB working memory for TFLite
+uint8_t tensor_arena[TENSOR_ARENA_SIZE] __attribute__((aligned(16)));
+
+const tflite::Model* tflite_model = nullptr;
+tflite::MicroInterpreter* tflite_interpreter = nullptr;
+TfLiteTensor* tflite_input = nullptr;
+TfLiteTensor* tflite_output = nullptr;
+
+// Genre prediction results
+int predicted_genre = -1;
+float predicted_confidence = 0.0;
 
 // Timing
 unsigned long last_display_update = 0;
@@ -284,6 +312,13 @@ void transmit_data_json() {
         note["confidence"] = note_detectors[i].magnitude;  // Simplified confidence metric
     }
 
+    // Add genre prediction
+    if (predicted_genre >= 0) {
+        JsonObject genre = doc.createNestedObject("genre");
+        genre["prediction"] = GENRE_LABELS[predicted_genre];
+        genre["confidence"] = predicted_confidence;
+    }
+
     // Serialize and transmit
     serializeJson(doc, Serial);
     Serial.println();
@@ -330,6 +365,32 @@ void setup() {
     initialize_frequency_bands();
     initialize_note_detectors();
 
+    // Load TFLite model from the byte array in genre_model.h
+    tflite_model = tflite::GetModel(ml_genre_model_tflite);
+    if (tflite_model->version() != TFLITE_SCHEMA_VERSION) {
+        log_e("TFLite model schema version mismatch: got %d, expected %d",
+              tflite_model->version(), TFLITE_SCHEMA_VERSION);
+        while (1) delay(1000);
+    }
+
+    // Create the interpreter with all available ops
+    static tflite::AllOpsResolver resolver;
+    static tflite::MicroInterpreter static_interpreter(
+        tflite_model, resolver, tensor_arena, TENSOR_ARENA_SIZE);
+    tflite_interpreter = &static_interpreter;
+
+    // Allocate memory for the model's input/output tensors
+    if (tflite_interpreter->AllocateTensors() != kTfLiteOk) {
+        log_e("TFLite AllocateTensors() failed");
+        while (1) delay(1000);
+    }
+
+    // Grab pointers to the input and output tensors
+    tflite_input  = tflite_interpreter->input(0);
+    tflite_output = tflite_interpreter->output(0);
+
+    log_i("TFLite model loaded: %d input features, %d output genres",
+          tflite_input->dims->data[1], tflite_output->dims->data[1]);
     log_i("Setup complete. Streaming data as JSON...");
 }
 
@@ -438,6 +499,62 @@ void loop() {
 
         for (uint8_t i = 0; i < num_note_detectors; i++) {
             DSPFeatureExtractor::goertzel_finalize(note_detectors[i]);
+        }
+
+        // Compute MFCCs from the FFT magnitude spectrum
+        DSPFeatureExtractor::compute_mfcc(
+            fft_data_real, fft_freq_bin_count, fft_freq_step,
+            mfcc_values, num_mfcc_coefficients, num_mel_bands);
+
+        // ── Genre Inference ─────────────────────────────────────
+        // Pack all 48 features in the same order the model was trained on,
+        // normalize each one, then run the model.
+
+        float features[NUM_FEATURES];
+
+        // Spectral (indices 0–3)
+        features[0] = spectral_features.centroid;
+        features[1] = spectral_features.spread;
+        features[2] = spectral_features.flatness;
+        features[3] = spectral_features.rolloff_85;
+
+        // Temporal (indices 4–6)
+        features[4] = temporal_features.zcr;
+        features[5] = temporal_features.rms_energy;
+        features[6] = temporal_features.peak_amplitude;
+
+        // 16 frequency bands (indices 7–22)
+        for (uint8_t i = 0; i < freq_band_count; i++) {
+            features[7 + i] = freq_band_smoothed[i];
+        }
+
+        // 13 MFCCs (indices 23–35)
+        for (uint8_t i = 0; i < num_mfcc_coefficients; i++) {
+            features[23 + i] = mfcc_values[i];
+        }
+
+        // 12 chroma bins from Goertzel note detectors (indices 36–47)
+        for (uint8_t i = 0; i < num_note_detectors; i++) {
+            features[36 + i] = note_detectors[i].magnitude;
+        }
+
+        // Normalize and copy into the input tensor
+        for (int i = 0; i < NUM_FEATURES; i++) {
+            tflite_input->data.f[i] = (features[i] - SCALER_MEAN[i]) / SCALER_SCALE[i];
+        }
+
+        // Run inference
+        if (tflite_interpreter->Invoke() == kTfLiteOk) {
+            // Find the genre with the highest probability
+            predicted_genre = 0;
+            predicted_confidence = tflite_output->data.f[0];
+
+            for (int i = 1; i < NUM_GENRES; i++) {
+                if (tflite_output->data.f[i] > predicted_confidence) {
+                    predicted_confidence = tflite_output->data.f[i];
+                    predicted_genre = i;
+                }
+            }
         }
 
     } else {
