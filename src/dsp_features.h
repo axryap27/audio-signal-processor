@@ -13,7 +13,7 @@
 
 typedef float dsp_real_t;
 
-// ── Data Structures ─────────────────────────────────────────────────
+// ── Custom Data Structures 
 
 struct SpectralFeatures {
     dsp_real_t centroid;     // centre of mass of the spectrum (Hz)
@@ -45,12 +45,13 @@ struct GoertzelState {
     dsp_real_t magnitude;    // result: detected magnitude
     dsp_real_t phase;        // result: detected phase (radians)
 };
-
-// ── Feature Extractor ───────────────────────────────────────────────
+//
+// ── Feature Extractor 
+//
 
 class DSPFeatureExtractor {
 public:
-    // Spectral -----------------------------------------------------------
+    // Spectral 
 
     static SpectralFeatures compute_spectral_centroid(
         const dsp_real_t* spectrum,
@@ -61,7 +62,7 @@ public:
         const dsp_real_t* spectrum,
         uint16_t spectrum_len);
 
-    // Temporal -----------------------------------------------------------
+    // Temporal 
 
     static dsp_real_t compute_zcr(
         const int16_t* signal,
@@ -75,7 +76,7 @@ public:
         const int16_t* signal,
         uint16_t signal_len);
 
-    // Peak detection -----------------------------------------------------
+    // Peak detection 
 
     static uint16_t detect_peaks(
         const dsp_real_t* spectrum,
@@ -84,7 +85,7 @@ public:
         uint16_t* peaks_out,
         uint16_t peaks_out_len);
 
-    // Goertzel single-frequency detector ---------------------------------
+    // Goertzel single-frequency detector 
 
     static void goertzel_init(
         GoertzelState& state,
@@ -96,7 +97,7 @@ public:
     static void goertzel_finalize(GoertzelState& state);
     static void goertzel_reset(GoertzelState& state);
 
-    // Mel-scale spectrum -------------------------------------------------
+    // Mel-scale spectrum 
 
     static void compute_mel_spectrum(
         const dsp_real_t* spectrum,
@@ -104,4 +105,14 @@ public:
         dsp_real_t freq_res,
         dsp_real_t* mel_bands,
         uint8_t num_bands);
+
+    // MFCCs (mel spectrum → log → DCT) 
+
+    static void compute_mfcc(
+        const dsp_real_t* spectrum,
+        uint16_t spectrum_len,
+        dsp_real_t freq_res,
+        dsp_real_t* mfcc_out,
+        uint8_t num_coefficients,
+        uint8_t num_mel_bands);
 };
