@@ -80,7 +80,7 @@ ML Classification (TensorFlow Lite)
 JSON Output (serial @ 115200 baud)
 ```
 
-### ML Pipeline
+### ML Pipeline & Training
 
 1. **Feature Extraction** (`ml/feature_extraction.py`)
    - Extract 48 audio features from audio files
@@ -94,6 +94,14 @@ JSON Output (serial @ 115200 baud)
 3. **Deployment**
    - Quantized model runs on ESP32 in real-time (might change)
    - Classifies audio into 10 music genres
+     
+4. **Training Results and Initial Data**
+   - Correlation matrix:
+   <img width="750" height="600" alt="image" src="https://github.com/user-attachments/assets/ef1503b2-3940-4337-aa76-f16736c97428" />
+   - Training history:
+   <img width="750" height="600" alt="image" src="https://github.com/user-attachments/assets/b61a1704-56bc-48b2-814a-4fba63b66930" />
+   
+
 
 ## Documentation
 
