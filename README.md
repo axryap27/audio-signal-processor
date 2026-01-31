@@ -99,7 +99,7 @@ JSON Output (serial @ 115200 baud)
    - Correlation matrix:
    <img width="750" height="600" alt="image" src="https://github.com/user-attachments/assets/ef1503b2-3940-4337-aa76-f16736c97428" />
    - Training history:
-   <img width="750" height="600" alt="image" src="https://github.com/user-attachments/assets/b61a1704-56bc-48b2-814a-4fba63b66930" />
+   <img width="1050" height="375" alt="image" src="https://github.com/user-attachments/assets/aded7aa8-3372-4c81-901d-357fef3bc644" />
    
 
 
