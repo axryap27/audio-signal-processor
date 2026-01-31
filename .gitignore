@@ -6,6 +6,7 @@ ml/images_original/
 
 # Extracted features and model outputs
 ml/genre_model.h
+ml/genre_model.h5
 
 # PlatformIO
 .pio/
